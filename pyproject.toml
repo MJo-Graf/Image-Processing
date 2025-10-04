@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "image-processing"
+version = "0.1.0"
+description = ""
+authors = ["Maximilian Graf"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+#python = "^3.12"
+python = "<3.14,>=3.9"
+kagglehub = "^0.3.13"
+torch = "^2.8.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
