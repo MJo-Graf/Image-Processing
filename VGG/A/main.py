@@ -2,6 +2,7 @@ import kagglehub
 import torch.nn as nn
 import torch.nn.functional as F
 import os
+import torch
 from torch.utils.data import Dataset
 
 class VocDataset(Dataset):
@@ -25,28 +26,29 @@ class VocDataset(Dataset):
 class VGG_A(nn.Module):
     def __init__(self):
         super(VGG_A,self).__init__()
-        self.conv1 = nn.Conv2d(1,64,3)
+        self.conv1 = nn.Conv2d(1,64,3,padding='same')
         self.maxpooling = nn.MaxPool2d(2,stride=2)
         #maxpool
-        self.conv2 = nn.Conv2d(64,128,3)
+        self.conv2 = nn.Conv2d(64,128,3,padding='same')
         #maxpool
-        self.conv3 = nn.Conv2d(128,256,3)
-        self.conv4 = nn.Conv2d(256,256,3)
+        self.conv3 = nn.Conv2d(128,256,3,padding='same')
+        self.conv4 = nn.Conv2d(256,256,3,padding='same')
         #maxpool
-        self.conv5 = nn.Conv2d(256,512,3)
-        self.conv6 = nn.Conv2d(512,512,3)
+        self.conv5 = nn.Conv2d(256,512,3,padding='same')
+        self.conv6 = nn.Conv2d(512,512,3,padding='same')
         #maxpool
-        self.conv7 = nn.Conv2d(512,512,3)
-        self.conv8 = nn.Conv2d(512,512,3)
+        self.conv7 = nn.Conv2d(512,512,3,padding='same')
+        self.conv8 = nn.Conv2d(512,512,3,padding='same')
+
         #maxpool
-        self.fc1 = nn.Linear(512,4096)
+        self.fc1 = nn.Linear(512*7*7,4096)
         self.fc2 = nn.Linear(4096,4096)
         self.fc3 = nn.Linear(4096,1000)
         #softmax
         self.softmax = nn.Softmax(1000)
 
     def forward(self,x):
-        c1 = F.relu(self.conv1(x))
+        c1 = F.relu(self.conv1(x))  
         c2 = self.maxpooling(c1)
         c3 = F.relu(self.conv2(c2))
         c4 = self.maxpooling(c3)
@@ -59,10 +61,11 @@ class VGG_A(nn.Module):
         c11 = F.relu(self.conv7(c10))
         c12 = F.relu(self.conv8(c11))
         c13 = self.maxpooling(c12)
-        c14 = F.relu(self.fc1(c13))
+        c14 = torch.flatten(c13,1)
         c15 = F.relu(self.fc1(c14))
-        c16 = F.relu(self.fc1(c15))
-        return c16
+        c16 = F.relu(self.fc2(c15))
+        c17 = F.relu(self.fc3(c16))
+        return c17
 
         
 
@@ -90,6 +93,11 @@ def main():
     #print(os.listdir(path_dataset))
     image,label = dataset.__getitem__(2)
     print("image = %s, label = %s" %(image,label))
+    net = VGG_A()
+    #out = net(torch.randn(1,1,224,224))
+    out = net(torch.randn(1,1,224,224))
+    print(out)
+    print(out.shape)
 
 
 
