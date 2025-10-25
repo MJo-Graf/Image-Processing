@@ -3,21 +3,32 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 import torch
+from torchvision import transforms
 from torch.utils.data import Dataset
 
+from PIL import Image
+import matplotlib.pyplot as plt
+
+
 class VocDataset(Dataset):
-    def __init__(self,path):
-        self.imgdir = path + "/VOC2012/JPEGImages/"
-        self.labelsdir = path + "/VOC2012/Annotations/"
+    def __init__(self,dataset_dir,transform=None,target_transform=None):
+        self.imgdir = dataset_dir + "/VOC2012/JPEGImages/"
+        self.labelsdir = dataset_dir + "/VOC2012/Annotations/"
         self.imglist = sorted(os.listdir(self.imgdir))
         self.labellist = sorted(os.listdir(self.labelsdir))
+        self.transform = transform
+        self.target_transform = target_transform
 
     def __len__(self):
         return len(self.imglist)
 
     def __getitem__(self,idx):
-         image = self.imgdir+self.imglist[idx]
+         image = Image.open(self.imgdir+self.imglist[idx])
          label = self.labelsdir+self.labellist[idx]
+         if self.transform:
+             image = self.transform(image)
+         if self.target_transform: #TODO: What needs the target_transform to look like 
+             label = self.target_transform(label)
          return image, label
 
 
@@ -67,16 +78,6 @@ class VGG_A(nn.Module):
         c17 = F.relu(self.fc3(c16))
         return c17
 
-        
-
-        
-
-
-
-
-
-
-
 
 def DownloadDataset():
     return kagglehub.dataset_download("huanghanchina/pascal-voc-2012")
@@ -84,20 +85,21 @@ def DownloadDataset():
 
 
 def main():
+
     print("Starting ...")
-    path_dataset =  DownloadDataset()
-    net = VGG_A()
-    print(path_dataset)
-    dataset = VocDataset(path_dataset)
-    print("number of jpeg files= %s" % (dataset.__len__()))
-    #print(os.listdir(path_dataset))
-    image,label = dataset.__getitem__(2)
-    print("image = %s, label = %s" %(image,label))
-    net = VGG_A()
-    #out = net(torch.randn(1,1,224,224))
-    out = net(torch.randn(1,1,224,224))
-    print(out)
-    print(out.shape)
+    dataset_dir =  DownloadDataset()
+    dataset=VocDataset(dataset_dir=dataset_dir,
+               transform=transforms.Compose([transforms.ToTensor(),transforms.Resize(size=[224,224])]),
+              )
+    
+    #image,label = dataset.__getitem__(1)
+    #print("image.shape=")
+    #print(image.numel())
+
+    # TODO: Add transform for labels
+    # TODO: Add training
+    # TODO: Save model
+
 
 
 
