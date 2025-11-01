@@ -51,8 +51,11 @@ class VocDataset(Dataset):
     def __getitem__(self,idx):
          image = Image.open(self.imgdir+self.imglist[idx])
          label = self.labelsdir+self.labellist[idx]
-         label = torch.zeros(1000)
-         label[5] =  1
+         label = torch.tensor(4,dtype=torch.long)
+         #print("label in getitem:")
+         #print(label.shape)
+         #label = torch.zeros(1000)
+         #label[5] =  1
         # tree = ET.parse(label)
         # root = tree.getroot()
         # for child in root:
@@ -84,7 +87,6 @@ class VGG_A(nn.Module):
         #maxpool
         self.conv7 = nn.Conv2d(512,512,3,padding='same')
         self.conv8 = nn.Conv2d(512,512,3,padding='same')
-
         #maxpool
         self.fc1 = nn.Linear(512*7*7,4096)
         self.fc2 = nn.Linear(4096,4096)
@@ -106,7 +108,7 @@ class VGG_A(nn.Module):
         c11 = F.relu(self.conv7(c10))
         c12 = F.relu(self.conv8(c11))
         c13 = self.maxpooling(c12)
-        c14 = torch.flatten(c13,start_dim=0)
+        c14 = torch.flatten(c13,start_dim=1)
         c15 = F.relu(self.fc1(c14))
         c16 = F.relu(self.fc2(c15))
         c17 = F.relu(self.fc3(c16))
@@ -121,38 +123,48 @@ def DownloadDataset():
 
 
 def main():
+    #test=torch.empty(3, dtype=torch.long).random_(5)
+    #print("test")
+    #print(test)
 
-#    print("Starting ...")
+
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print("Training on %s: " %(device))
     dataset_dir =  DownloadDataset()
     trainset=VocDataset(dataset_dir=dataset_dir,
                transform=transforms.Compose([transforms.ToTensor(),transforms.Resize(size=[224,224])]),
               )
-#    
     image,label = trainset.__getitem__(1)
-    #print("image.shape=")
-    #print(image.shape)
-    #print("label.shape=")
-    #print(label)
-
-    # TODO: Add transform for labels
-    # TODO: Add training
-    # TODO: Save model
-
     net = VGG_A()
-
-    output = net(image)
-
+    net.to(device)
     optimizer = optim.SGD(net.parameters(),lr=0.0001,momentum=0.9)
     trainloader = torch.utils.data.DataLoader(trainset,batch_size=1,shuffle=True,num_workers=2)
+    criterion = torch.nn.CrossEntropyLoss()
+    #criterion = torch.nn.MSELoss()
 
-    criterion = torch.nn.MSELoss()
-
-    loss = criterion(output,label)
+    ####outputs = torch.randn(2,1000)
+    ####labels = torch.ones(2).long()
+    ####print("outputs=")
+    ####print(outputs)
+    ####print("labels=")
+    ####print(labels)
+    ####loss = criterion(outputs,labels)
+    #####optimizer.step()
+    #####print("[%f,%d] loss = %d" %(epoch,i,loss.item()))
 
     for epoch in range(2):
         for i, data in enumerate(trainloader,0):
-            inputs,labels= data
+            inputs,labels= data[0].to(device),data[1].to(device)
+            optimizer.zero_grad()
             outputs=net(inputs)
+            #print("outputs=")
+            #print(outputs.shape)
+            #print("labels=")
+            #print(labels.shape)
+            #print("inputs:")
+            #print(inputs.shape)
+            #outputs=torch.randn(1,1000).to(device)
+            #labels=torch.ones(1).long().to(device)
             loss = criterion(outputs,labels)
             loss.backward()
             optimizer.step()
