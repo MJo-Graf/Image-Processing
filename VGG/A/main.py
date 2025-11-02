@@ -134,6 +134,9 @@ def main():
                transform=transforms.Compose([transforms.ToTensor(),transforms.Resize(size=[224,224])]),
               )
     image,label = trainset.__getitem__(1)
+    # TODO: Verify that loading is really working correctly
+    print("Dataset length:")
+    print(trainset.__len__())
     print("image.shape")
     print(image.shape)
     net = VGG_A()
@@ -143,6 +146,7 @@ def main():
     criterion = torch.nn.CrossEntropyLoss()
 
 
+    # TODO: Fix
     for epoch in range(2):
         for i, data in enumerate(trainloader,0):
             inputs,labels= data[0].to(device),data[1].to(device)
