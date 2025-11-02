@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import os
 import torch
 import torch.optim as optim
+from pathlib import Path
 from torchvision import transforms
 from torch.utils.data import Dataset
 
@@ -15,25 +16,23 @@ import matplotlib.pyplot as plt
 
 class ILSVRCDataset(Dataset):
     def __init__(self,dataset_dir,transform=None,target_transform=None):
-        self.imgdir = dataset_dir + "/VOC2012/JPEGImages/"
-        self.labelsdir = dataset_dir + "/VOC2012/Annotations/"
-        self.imglist = sorted(os.listdir(self.imgdir))
-        self.labellist = sorted(os.listdir(self.labelsdir))
+        self.dataset_dir = dataset_dir
+        self.trainset_dir = dataset_dir + "/ILSVRC/Data/CLS-LOC/train"
         self.transform = transform
-        self.target_transform = target_transform
+        p = Path(self.trainset_dir).resolve()
+        self.imagelist = []
+        for classdirs in p.iterdir():
+            for image in classdirs.iterdir():
+                self.imagelist.append(Path(image))
+        
 
     def __len__(self):
-        return len(self.imglist)
+        return len(self.imagelist)
 
     def __getitem__(self,idx):
-         image = Image.open(self.imgdir+self.imglist[idx])
-         label = self.labelsdir+self.labellist[idx]
-
-         if self.transform:
-             image = self.transform(image)
-         if self.target_transform: #TODO: What needs the target_transform to look like 
-             label = self.target_transform(label)
-         return image, label
+        image = self.transform(Image.open(self.imagelist[idx]))
+        label = 0
+        return image, label
 
 
 class VocDataset(Dataset):
@@ -130,41 +129,25 @@ def main():
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print("Training on %s: " %(device))
-    dataset_dir =  DownloadDataset()
-    trainset=VocDataset(dataset_dir=dataset_dir,
+    dataset_dir =  "/home/maximilian/data/ILSVRC"
+    trainset=ILSVRCDataset(dataset_dir=dataset_dir,
                transform=transforms.Compose([transforms.ToTensor(),transforms.Resize(size=[224,224])]),
               )
     image,label = trainset.__getitem__(1)
+    print("image.shape")
+    print(image.shape)
     net = VGG_A()
     net.to(device)
     optimizer = optim.SGD(net.parameters(),lr=0.0001,momentum=0.9)
     trainloader = torch.utils.data.DataLoader(trainset,batch_size=1,shuffle=True,num_workers=2)
     criterion = torch.nn.CrossEntropyLoss()
-    #criterion = torch.nn.MSELoss()
 
-    ####outputs = torch.randn(2,1000)
-    ####labels = torch.ones(2).long()
-    ####print("outputs=")
-    ####print(outputs)
-    ####print("labels=")
-    ####print(labels)
-    ####loss = criterion(outputs,labels)
-    #####optimizer.step()
-    #####print("[%f,%d] loss = %d" %(epoch,i,loss.item()))
 
     for epoch in range(2):
         for i, data in enumerate(trainloader,0):
             inputs,labels= data[0].to(device),data[1].to(device)
             optimizer.zero_grad()
             outputs=net(inputs)
-            #print("outputs=")
-            #print(outputs.shape)
-            #print("labels=")
-            #print(labels.shape)
-            #print("inputs:")
-            #print(inputs.shape)
-            #outputs=torch.randn(1,1000).to(device)
-            #labels=torch.ones(1).long().to(device)
             loss = criterion(outputs,labels)
             loss.backward()
             optimizer.step()
