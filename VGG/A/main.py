@@ -21,24 +21,27 @@ class ILSVRCDataset(Dataset):
         self.transform = transform
         p = Path(self.trainset_dir).resolve()
         self.imagelist = []
+        self.synsetids = []
+        self.descrlist = [] 
+        with open(dataset_dir+"/LOC_synset_mapping.txt") as f:
+            for l in f:
+                self.synsetids.append(l.split()[0])
+                self.descrlist.append(l.split()[1:])
+        
+        self.labellist = []
         for classdirs in sorted(p.iterdir()):
             for image in sorted(classdirs.iterdir()):
                 self.imagelist.append(Path(image))
+                image_synsetid = os.path.split(str(self.imagelist[-1].parent))[-1]
+                self.labellist.append(self.synsetids.index(image_synsetid))
         
 
     def __len__(self):
         return len(self.imagelist)
 
     def __getitem__(self,idx):
-        #image = self.transform(Image.open(self.imagelist[idx]).convert('RGB'))
-        image = self.transform(Image.open(self.imagelist[idx]))
-        #print("idx=%d"%(idx))
-        #print("image path:")
-        #print(self.imagelist[idx])
-        #print("image.shape:")
-        #print(image.shape)
-        label = 0
-        return image, label
+        return self.transform(Image.open(self.imagelist[idx])),self.labellist[idx]
+
 
 
 class VocDataset(Dataset):
@@ -128,12 +131,6 @@ def DownloadDataset():
 
 
 def main():
-    #print(x.shape)
-    #test=torch.empty(3, dtype=torch.long).random_(5)
-    #print("test")
-    #print(test)
-
-
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print("Training on %s: " %(device))
     dataset_dir =  "/home/maximilian/data/ILSVRC"
@@ -142,14 +139,14 @@ def main():
                                           transforms.Resize(size=[224,224]),
                                           transforms.Lambda(lambda x: torch.cat((x,x,x),dim=0) if x.shape[0] == 1 else x)])
               )
-    #trainset=ILSVRCDataset(dataset_dir=dataset_dir,
-    #           transform=transforms.Compose([transforms.ToTensor(),transforms.Resize(size=[224,224])]),
-   #          )
     #print("len of dataset %d=" %(trainset.__len__()))
     #image,label = trainset.__getitem__(229453)
     #print("image:")
     #print(image)
     #print(image.shape)
+    #print("label: ")
+    #print(label)
+    #print(trainset.descrlist[label])
     #plt.imshow(image.permute(1,2,0))
     #plt.show()
 
@@ -163,12 +160,9 @@ def main():
     for i, data in enumerate(trainloader,0):
         inputs,labels= data[0].to(device),data[1].to(device)
         optimizer.zero_grad()
-        #print("inputs.shape:")
-        #print(inputs.shape)
-        #if inputs.shape[1] == 1:
-        #    print("corrupt dimensions")
-        #    break
         outputs=net(inputs)
+        print("labels= ")
+        print(labels)
         loss = criterion(outputs,labels)
         loss.backward()
         optimizer.step()
