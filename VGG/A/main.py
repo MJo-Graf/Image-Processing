@@ -21,8 +21,8 @@ class ILSVRCDataset(Dataset):
         self.transform = transform
         p = Path(self.trainset_dir).resolve()
         self.imagelist = []
-        for classdirs in p.iterdir():
-            for image in classdirs.iterdir():
+        for classdirs in sorted(p.iterdir()):
+            for image in sorted(classdirs.iterdir()):
                 self.imagelist.append(Path(image))
         
 
@@ -30,7 +30,13 @@ class ILSVRCDataset(Dataset):
         return len(self.imagelist)
 
     def __getitem__(self,idx):
+        #image = self.transform(Image.open(self.imagelist[idx]).convert('RGB'))
         image = self.transform(Image.open(self.imagelist[idx]))
+        #print("idx=%d"%(idx))
+        #print("image path:")
+        #print(self.imagelist[idx])
+        #print("image.shape:")
+        #print(image.shape)
         label = 0
         return image, label
 
@@ -122,6 +128,7 @@ def DownloadDataset():
 
 
 def main():
+    #print(x.shape)
     #test=torch.empty(3, dtype=torch.long).random_(5)
     #print("test")
     #print(test)
@@ -131,32 +138,43 @@ def main():
     print("Training on %s: " %(device))
     dataset_dir =  "/home/maximilian/data/ILSVRC"
     trainset=ILSVRCDataset(dataset_dir=dataset_dir,
-               transform=transforms.Compose([transforms.ToTensor(),transforms.Resize(size=[224,224])]),
+            transform=transforms.Compose([transforms.ToTensor(),
+                                          transforms.Resize(size=[224,224]),
+                                          transforms.Lambda(lambda x: torch.cat((x,x,x),dim=0) if x.shape[0] == 1 else x)])
               )
-    image,label = trainset.__getitem__(1)
-    # TODO: Verify that loading is really working correctly
-    print("Dataset length:")
-    print(trainset.__len__())
-    print("image.shape")
-    print(image.shape)
+    #trainset=ILSVRCDataset(dataset_dir=dataset_dir,
+    #           transform=transforms.Compose([transforms.ToTensor(),transforms.Resize(size=[224,224])]),
+   #          )
+    #print("len of dataset %d=" %(trainset.__len__()))
+    #image,label = trainset.__getitem__(229453)
+    #print("image:")
+    #print(image)
+    #print(image.shape)
+    #plt.imshow(image.permute(1,2,0))
+    #plt.show()
+
     net = VGG_A()
     net.to(device)
     optimizer = optim.SGD(net.parameters(),lr=0.0001,momentum=0.9)
-    trainloader = torch.utils.data.DataLoader(trainset,batch_size=1,shuffle=True,num_workers=2)
+    trainloader = torch.utils.data.DataLoader(trainset,batch_size=1,shuffle=True,num_workers=1)
     criterion = torch.nn.CrossEntropyLoss()
-
-
     # TODO: Fix
-    for epoch in range(2):
-        for i, data in enumerate(trainloader,0):
-            inputs,labels= data[0].to(device),data[1].to(device)
-            optimizer.zero_grad()
-            outputs=net(inputs)
-            loss = criterion(outputs,labels)
-            loss.backward()
-            optimizer.step()
-            print("[%f,%d] loss = %d" %(epoch,i,loss.item()))
+    epoch = 0
+    for i, data in enumerate(trainloader,0):
+        inputs,labels= data[0].to(device),data[1].to(device)
+        optimizer.zero_grad()
+        #print("inputs.shape:")
+        #print(inputs.shape)
+        #if inputs.shape[1] == 1:
+        #    print("corrupt dimensions")
+        #    break
+        outputs=net(inputs)
+        loss = criterion(outputs,labels)
+        loss.backward()
+        optimizer.step()
+        print("[%f,%d] loss = %d" %(epoch,i,loss.item()))
 
+    print("end of main")
 
 
 
