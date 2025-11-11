@@ -41,6 +41,7 @@ class ILSVRCDataset(Dataset):
 class VGG_A(nn.Module):
     def __init__(self):
         super(VGG_A,self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(3,64,3,padding='same')
         self.maxpooling = nn.MaxPool2d(2,stride=2)
         #maxpool
