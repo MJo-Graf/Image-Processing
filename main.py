@@ -1,17 +1,25 @@
+import sys
 from utils.modelfactory import ModelFactory 
 from utils.datasetfactory import DatasetFactory 
-from utils.transformfactory import TransformFactory 
+from utils.context import TrainContext
+
+
+
+
 
 def main():
-   device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
    mf = ModelFactory()
-   tf = TransformFactory()
-   model = mf.create("VGG_A")
    df = DatasetFactory()
-   dataset = df.create("ImageNet")
+   model = mf.create("VGG_A")
+   dataset = df.create("ImageNet","VGG_A")
+   ctx = TrainContext()
+   ctx.set_model(model)
+   ctx.set_dataset(dataset)
+   ctx.set_train_params()
+   ctx.train()
    print(model)
    print(dataset)
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
