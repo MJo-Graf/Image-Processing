@@ -1,3 +1,4 @@
+import argparse
 import sys
 from utils.modelfactory import ModelFactory 
 from utils.datasetfactory import DatasetFactory 
@@ -8,6 +9,13 @@ from utils.context import TrainContext
 
 
 def main():
+   parser = argparse.ArgumentParser(
+                prog='main',
+                description='Neural Network environment in Python',
+                epilog='Epilog Text')
+   parser.add_argument('-m','--model')
+   args = parser.parse_args()
+   #print("args.model= %s" %args.model)
 
    mf = ModelFactory()
    df = DatasetFactory()
