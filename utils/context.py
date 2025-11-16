@@ -25,8 +25,9 @@ TrainParams = {
         }
 
 class TrainContext(Context):
-    def __init__(self):
+    def __init__(self,params):
         super().__init__()
+        self.params = params
         self.criterion = None
         self.optimizer = None
         self.epochs = None
