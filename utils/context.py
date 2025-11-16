@@ -1,4 +1,6 @@
 import torch
+from collections import deque
+from statistics import mean 
 
 class Context:
     def __init__(self):
@@ -46,14 +48,15 @@ class TrainContext(Context):
     def train(self):
         print("Start Training")
 
+        loss_buffer = deque(maxlen=2000)
         for epoch in range(self.epochs):
             for i,data in enumerate(self.trainloader,0):
                 inputs,labels = data[0].to(self.device),data[1].to(self.device)
-                print("input shape: ")
-                print(inputs.shape)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = self.criterion(outputs,labels)
                 loss.backward()
                 self.optimizer.step()
-                print("[%d,%d] loss = %f"%(epoch,i,loss.item()))
+                loss_buffer.append(loss.item())
+                #print(loss_buffer)
+                print("[%d,%d] Current loss = %f, Running loss = %f"%(epoch,i,loss.item(),mean(loss_buffer)))

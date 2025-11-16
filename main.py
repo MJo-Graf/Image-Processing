@@ -18,8 +18,6 @@ def main():
    ctx.set_dataset(dataset)
    ctx.set_train_params()
    ctx.train()
-   print(model)
-   print(dataset)
 
 if __name__ == "__main__":
     sys.exit(main())
